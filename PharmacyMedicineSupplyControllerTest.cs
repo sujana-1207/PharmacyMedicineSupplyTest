@@ -39,7 +39,7 @@ namespace PharmacyMedicineSupplyTest
         {
             providerRepo.Setup(m => m.GetSupply(demand)).Returns(Task.FromResult(supplyList));
             var pro = new PharmacySupplyController(providerRepo.Object);
-            var res = pro.Get(demand).Result as OkObjectResult;
+            var res = pro.Get(demand).Result as ObjectResult;
             Assert.AreEqual(res.StatusCode, 200);
         }
         [Test]
@@ -47,7 +47,7 @@ namespace PharmacyMedicineSupplyTest
         {
             providerRepo.Setup(m => m.GetSupply(wrongDemand)).Returns(Task.FromResult(new List<PharmacyMedicineSupply>()));
             var pro = new PharmacySupplyController(providerRepo.Object);
-            var res = pro.Get(wrongDemand).Result as NotFoundObjectResult;
+            var res = pro.Get(wrongDemand).Result as ObjectResult;
             Assert.AreEqual(res.StatusCode, 404);
         }
        
