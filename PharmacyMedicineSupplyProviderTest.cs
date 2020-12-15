@@ -13,35 +13,36 @@ namespace PharmacyMedicineSupplyTest
     public class Tests
     {
         List<PharmacyMedicineSupply> supplyList;
-        Mock<ISupply> supplyRepo;
+        Mock<ISupplyRepo> supplyRepo;
         List<PharmacyDTO> pharmacies;
-        List<MedicineStock> stock;
+        List<string> stock;
+        Mock<IMedicineStockProvider> proMock;
+        List<MedicineDemand> x;
         [SetUp]
         public void Setup()
         {
             pharmacies = new List<PharmacyDTO> {
             new PharmacyDTO{ pharmacyName="Appolo Pharmacy"}
             };
-            stock = new List<MedicineStock>{
-             new MedicineStock{ Name="Medicine1",Number_Of_Tablets_In_Stock=20},
-             new MedicineStock { Name="Medicine2",Number_Of_Tablets_In_Stock=30}
+            stock = new List<string>() { "Medicine1", "Medicine2" };
+            x = new List<MedicineDemand>(){
+                new MedicineDemand{MedicineName="Medicine1",Count=18 }
             };
-            supplyRepo = new Mock<ISupply>();
+            supplyRepo = new Mock<ISupplyRepo>();
             supplyRepo.Setup(m => m.GetPharmacies()).Returns(pharmacies);
-
+            proMock = new Mock<IMedicineStockProvider>();
+           
         }
 
         [Test]
         public async Task TestProviderLayerEnoughStock()
         {
-            var pro = new PharmacySupplyProvider(supplyRepo.Object);
-            List<MedicineDemand> x = new List<MedicineDemand>(){
-                new MedicineDemand{MedicineName="Medicine1",Count=18 }
-            };
+            proMock.Setup(s => s.GetStock("Medicine1")).Returns(Task.FromResult(10));
+            var pro = new PharmacySupplyProvider(supplyRepo.Object,proMock.Object);
             List<PharmacyMedicineSupply> res=await pro.GetSupply(x);
             supplyList = new List<PharmacyMedicineSupply>
             {
-                new PharmacyMedicineSupply{ PharmacyName="Appolo Pharmacy",MedicineName="Medicine1",SupplyCount=18},
+                new PharmacyMedicineSupply{ PharmacyName="Appolo Pharmacy",MedicineName="Medicine1",SupplyCount=10},
                 
             };
             Assert.AreEqual(supplyList[0].SupplyCount, res[0].SupplyCount);
@@ -51,14 +52,15 @@ namespace PharmacyMedicineSupplyTest
         [Test]
         public async Task TestProviderLayerNotEnoughStock()
         {
-            var pro = new PharmacySupplyProvider(supplyRepo.Object);
+            proMock.Setup(s => s.GetStock("Medicine1")).Returns(Task.FromResult(10));
+            var pro = new PharmacySupplyProvider(supplyRepo.Object,proMock.Object);
             List<MedicineDemand> x = new List<MedicineDemand>(){
                 new MedicineDemand{MedicineName="Medicine1",Count=55 }
             };
             List<PharmacyMedicineSupply> res = await pro.GetSupply(x);
             supplyList = new List<PharmacyMedicineSupply>
             {
-                new PharmacyMedicineSupply{ PharmacyName="Appolo Pharmacy",MedicineName="Medicine1",SupplyCount=50},
+                new PharmacyMedicineSupply{ PharmacyName="Appolo Pharmacy",MedicineName="Medicine1",SupplyCount=10},
 
             };
             Assert.AreEqual(supplyList[0].SupplyCount, res[0].SupplyCount);
@@ -68,7 +70,8 @@ namespace PharmacyMedicineSupplyTest
         [Test]
         public async Task TestProviderLayerNoMedicine()
         {
-            var pro = new PharmacySupplyProvider(supplyRepo.Object);
+            proMock.Setup(s => s.GetStock("Medicine8")).Returns(Task.FromResult(-1)) ;
+            var pro = new PharmacySupplyProvider(supplyRepo.Object,proMock.Object);
             List<MedicineDemand> x = new List<MedicineDemand>(){
                 new MedicineDemand{MedicineName="Medicine8",Count=21 }
             };
@@ -80,8 +83,9 @@ namespace PharmacyMedicineSupplyTest
         [Test]
         public async Task TestProviderLayerEnoughStockNotDivisible()
         {
+            proMock.Setup(s => s.GetStock(It.IsAny<string>())).Returns(Task.FromResult(50));
             pharmacies.Add(new PharmacyDTO { pharmacyName = "G.K Pharmacies" });
-            var pro = new PharmacySupplyProvider(supplyRepo.Object);
+            var pro = new PharmacySupplyProvider(supplyRepo.Object,proMock.Object);
             List<MedicineDemand> x = new List<MedicineDemand>(){
                 new MedicineDemand{MedicineName="Medicine1",Count=19 }
             };

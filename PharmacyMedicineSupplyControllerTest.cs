@@ -15,10 +15,8 @@ namespace PharmacyMedicineSupplyTest
     class PharmacyMedicineSupplyControllerTest
     {
         List<PharmacyMedicineSupply> supplyList;
-        Mock<IPharmacySupply> providerRepo;
-        List<PharmacyDTO> pharmacies;
+        Mock<IPharmacySupplyProvider> providerRepo;
         List<MedicineDemand> demand,emptyDemand,wrongDemand;
-        private List<MedicineStock> stock;
         [SetUp]
         public void Setup()
         {
@@ -34,15 +32,12 @@ namespace PharmacyMedicineSupplyTest
                 new PharmacyMedicineSupply{ PharmacyName="Appolo Pharmacy",MedicineName="Medicine1",SupplyCount=18},
 
             };
-            providerRepo = new Mock<IPharmacySupply>();
-            providerRepo.Setup(m => m.GetSupply(demand)).Returns(Task.FromResult(supplyList));
-            providerRepo.Setup(m => m.GetSupply(emptyDemand)).Returns(Task.FromResult(throw new NullReferenceException()));
-            providerRepo.Setup(m => m.GetSupply(wrongDemand)).Returns(Task.FromResult(new List<PharmacyMedicineSupply>()));
-
+            providerRepo = new Mock<IPharmacySupplyProvider>();
         }
         [Test]
         public void TestControllerLayerCorrectInput()
         {
+            providerRepo.Setup(m => m.GetSupply(demand)).Returns(Task.FromResult(supplyList));
             var pro = new PharmacySupplyController(providerRepo.Object);
             var res = pro.Get(demand).Result as OkObjectResult;
             Assert.AreEqual(res.StatusCode, 200);
@@ -50,6 +45,7 @@ namespace PharmacyMedicineSupplyTest
         [Test]
         public void TestControllerLayerIncorrectInput1()
         {
+            providerRepo.Setup(m => m.GetSupply(wrongDemand)).Returns(Task.FromResult(new List<PharmacyMedicineSupply>()));
             var pro = new PharmacySupplyController(providerRepo.Object);
             var res = pro.Get(wrongDemand).Result as NotFoundObjectResult;
             Assert.AreEqual(res.StatusCode, 404);
